@@ -1,4 +1,5 @@
 [kuberentes installationn both client and master](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm)
+[kuberentes installationn both client and master](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm)
 ## install kubernetes on ubuntu 22.04
 
 ```
@@ -18,37 +19,41 @@ systemctl disable --now ufw
 ```
 ## Add kernel modules
 ```
-vim /etc/modules-load.d/containerd.conf --> add
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
+EOF
 ```
-## Kernel setting
 ```
-vim /etc/sysctl.d/kubernetes.conf >> add
+sudo modprobe overlay
+sudo modprobe br_netfilter
+```
+## verify
+```
+lsmod | grep br_netfilter
+lsmod | grep overlay
+```
 
-net.bridge.bridge-nf-call-ip6tables = 1
+# sysctl params required by setup, params persist across reboots
+```
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
 net.bridge.bridge-nf-call-iptables  = 1
+net.bridge.bridge-nf-call-ip6tables = 1
 net.ipv4.ip_forward                 = 1
+EOF
 ```
-## then
 
+# Apply sysctl params without reboot
+```
+sudo sysctl --system
+```
 ```
 sysctl -p
 ```
-### or
-
+## verify
 ```
-sudo vi /etc/sysctl.conf 
-
-# Uncomment the next line to enable packet forwarding for IPv4
-net.ipv4.ip_forward=1
+sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables net.ipv4.ip_forward
 ```
-## then
-
-```
-sysctl -p
-```
-
 ## install required dependencies
 ```
 sudo apt update && sudo apt install -y ca-certificates curl gnupg lsb-release conntrack apt-transport-https gpg
