@@ -73,6 +73,11 @@ sudo apt-get update
 sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 ```
+### or
+```
+apt install -y kubeadm=1.29.5-1.1 kubelet=1.29.5-1.1 kubectl=1.29.5-1.1
+```
+
 ### optional
 ```
 sudo systemctl enable --now kubelet
