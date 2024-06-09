@@ -13,9 +13,9 @@ kubeadm init phase upload-certs --upload-certs
 ```
 kubeadm token create --certificate-key <YOUR OUTPUT> --print-join-command
 ```
-## After that don't forget to add --apiserver-advertise-address at the end of your command.
-For worker node
+### After that don't forget to add --apiserver-advertise-address at the end of your command.
+## For worker node
 ```
 kubeadm token create --print-join-command
 ```
-## Same as master node, but you don't need the --certificate-key and --control-plane
+### Same as master node, but you don't need the --certificate-key and --control-plane
