@@ -1,4 +1,4 @@
-## to install
+## to install with helm
 ```
 kubectl create namespace ingress-nginx
 ```
@@ -18,3 +18,20 @@ helm install ingress-nginx ingress-nginx/ingress-nginx  \
 ```bash
 helm uninstall ingress-nginx -n ingress-nginx
 ```
+
+## to custom it
+```bash
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+```
+```
+helm pull ingress-nginx/ingress-nginx
+```
+```
+tar -xzvf ingress-nginx-4.10.1.tgz 
+```
+```
+cd ingress-nginx
+vi values.yaml values.yaml.bkp
+```
+## EDIT values.yaml
+### search for king == DaemonSet and type == ClusterIP and hostNetwork: true and hostPort: true
