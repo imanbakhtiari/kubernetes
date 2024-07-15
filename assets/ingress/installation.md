@@ -38,4 +38,4 @@ vi values.yaml values.yaml.bkp
 helm upgrade --install ingress-nginx ./ingress-nginx -n ingress-nginx -f ./ingress-nginx/values.yaml
 ```
 ## EDIT values.yaml
-### search for king == DaemonSet and type == ClusterIP and hostNetwork: true and hostPort: true
+### search for kind == DaemonSet and type == ClusterIP and hostNetwork: true and hostPort: true
