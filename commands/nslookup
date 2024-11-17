@@ -1,0 +1,2 @@
+kubectl run -it --rm --restart=Never alpine --image=alpine:latest --namespace=monitoring -- nslookup victoria-metrics-cluster-vmselect.monitoring.svc.cluster.local
+
