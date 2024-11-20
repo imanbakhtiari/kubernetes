@@ -1,0 +1,173 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webserver
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webserver
+  template:
+    metadata:
+      labels:
+        app: webserver
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: nginx
+          image: nginx:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - mountPath: /var/log/nginx
+              name: nginx-logs
+            - mountPath: /etc/nginx/nginx.conf
+              name: nginx-config
+              subPath: nginx.conf
+        - name: netdata
+          image: netdata/netdata:v1.29.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 19999
+          volumeMounts:
+            - mountPath: /var/log/nginx
+              name: nginx-logs
+            - mountPath: /etc/netdata/netdata.conf
+              name: netdata-config
+              subPath: netdata.conf
+              #            - mountPath: /etc/netdata/go.d/web_log.conf
+              #              name: netdata-web-log-config
+              #              subPath: web_log.conf
+            - mountPath: /var/lib/netdata
+              name: netdata-writable
+        - name: nginx-exporter
+          image: nginx/nginx-prometheus-exporter:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9113
+          env:
+            - name: NGINX_SERVER
+              value: "http://127.0.0.1:80/stub_status"
+          volumeMounts:
+            - mountPath: /etc/nginx/nginx.conf
+              name: nginx-config
+              subPath: nginx.conf
+      volumes:
+        - name: nginx-logs
+          emptyDir: {}
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+        - name: netdata-config
+          configMap:
+            name: netdata-config
+            #        - name: netdata-web-log-config
+            #          configMap:
+            #            name: netdata-web-log-config
+        - name: netdata-writable
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: monitoring
+data:
+  nginx.conf: |
+    worker_processes 1;
+    events { worker_connections 1024; }
+    http {
+        access_log /var/log/nginx/access.log;
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        types_hash_max_size 2048;
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        server {
+          listen 80;
+          server_name localhost;
+          location /stub_status {
+            stub_status on;
+            access_log off;
+          }
+          location / {
+            root /usr/share/nginx/html;
+            index index.html index.htm;
+          }
+        }
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netdata-config
+  namespace: monitoring
+data:
+  netdata.conf: |
+    [plugins]
+        python.d = yes
+
+---
+#apiVersion: v1
+#kind: ConfigMap
+#metadata:
+#  name: netdata-web-log-config
+#  namespace: monitoring
+#data:
+#  web_log.conf: |
+#    jobs:
+#      - name: nginx_log
+#        path: /var/log/nginx/access.log
+#        read_from: beginning
+#        format: '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent"'
+#
+#---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+  namespace: monitoring
+spec:
+  selector:
+    app: webserver
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  clusterIP: None # Optional if you need headless service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-exporter-service
+  namespace: monitoring
+spec:
+  selector:
+    app: webserver
+  ports:
+    - protocol: TCP
+      port: 9113
+      targetPort: 9113
+  clusterIP: None # Optional if you need headless service
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: netdata-service
+  namespace: monitoring
+spec:
+  selector:
+    app: webserver
+  ports:
+    - protocol: TCP
+      port: 19999
+      targetPort: 19999
+  clusterIP: None # Optional if you need headless service
