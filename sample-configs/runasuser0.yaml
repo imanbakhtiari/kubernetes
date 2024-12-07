@@ -1,0 +1,22 @@
+containers:
+  - name: netdata
+    image: netdata/netdata:v1.29.0
+    ports:
+      - containerPort: 19999
+        name: 19999tcp
+        protocol: TCP
+    securityContext:
+      privileged: true # Grants root-level access and full device control
+      runAsUser: 0 # Ensures the container runs as the root user
+      capabilities:
+        add:
+          - ALL # Grants all capabilities (optional; tailor as needed)
+    volumeMounts:
+      - mountPath: /var/log/nginx
+        name: logs
+      - mountPath: /etc/netdata/netdata.conf
+        name: netdata-config
+        subPath: netdata.conf
+      - mountPath: /var/lib/netdata
+        name: netdata-writable
+
