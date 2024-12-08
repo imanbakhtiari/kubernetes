@@ -1,0 +1,16 @@
+ - name: netdata
+   image: netdata/netdata
+   securityContext:
+     runAsUser: 1000  # UID of netdata user
+     runAsGroup: 1000  # GID of netdata group
+     fsGroup: 1000
+     capabilities:
+       add:
+         - ALL  # Grant all available capabilities (not recommended)
+     privileged: true
+     allowPrivilegeEscalation: true
+     runAsNonRoot: false
+     seccompProfile:
+       type: RuntimeDefault
+     appArmor:
+       profile: unconfined
