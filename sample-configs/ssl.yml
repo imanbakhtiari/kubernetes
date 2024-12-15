@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ssl-certs
+  namespace: monitoring2
+type: kubernetes.io/tls
+data:
+  tls.crt: <base64_encoded_public_certificate>
+  tls.key: <base64_encoded_private_key>
+
+
+
+##  base64 -w 0 ssl.crt
