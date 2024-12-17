@@ -30,12 +30,20 @@ config:
       kubernetes_sd_configs:
         - role: pod
       relabel_configs:
+        # Keep only pods with label app=webserver
         - source_labels: [__meta_kubernetes_pod_label_app]
           action: keep
           regex: webserver
-        - source_labels: [__address__]
+        # Add a label for the node (host) where the pod is running
+        - source_labels: [__meta_kubernetes_pod_node_name]
+          target_label: node
+        # Add a label for the pod name
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        # Extract the pod IP and port dynamically
+        - source_labels: [__meta_kubernetes_pod_ip]
           target_label: __address__
-          replacement: netdata-service.monitoring.svc.cluster.local:19999
+          replacement: $1:19999
     - job_name: "kubernetes-apiservers"
       kubernetes_sd_configs:
         - role: endpoints
