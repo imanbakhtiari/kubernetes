@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: grafana-pdb
+  namespace: monitoring2
+spec:
+  minAvailable: 3  # Ensure at least 3 pods are available
+  maxUnavailable: 10%  # Maximum 10% of pods can be disrupted
+  selector:
+    matchLabels:
+      app: grafana
+
