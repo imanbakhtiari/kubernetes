@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: default
+spec:
+  replicas: 3  # Adjust the number of replicas as needed
+  selector:
+    matchLabels:
+      app: nginx
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1  # Number of Pods to be created above desired replicas
+      maxUnavailable: 1  # Number of Pods that can be unavailable during the update
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:latest  # You can replace this with a specific version tag (e.g., nginx:1.21)
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 500m  # 0.5 CPU core
+              memory: 512Mi  # 512MB of memory
+            limits:
+              cpu: 1  # 1 CPU core
+              memory: 1Gi  # 1GB of memory
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            successThreshold: 1
+            failureThreshold: 3
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: nginx-pdb
+  namespace: default
+spec:
+  minAvailable: 2  # Minimum number of Pods that should be available
+  selector:
+    matchLabels:
+      app: nginx
+
