@@ -206,6 +206,5 @@ Now you have Istio installed with:
 ✅ **Security (mTLS & RBAC)**  
 ✅ **Observability (Kiali, Jaeger, Prometheus)**  
 
-Would you like help deploying Istio in **AWS/GCP**? 🚀
 
 

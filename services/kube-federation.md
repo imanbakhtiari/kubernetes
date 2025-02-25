@@ -185,6 +185,5 @@ Now you have **two federated Kubernetes clusters** with:
 ✅ **Automatic Failover & Multi-Cluster Load Balancing**  
 ✅ **Scalability & High Availability Across Regions**  
 
-Would you like help with setting up **KubeFed in AWS/GCP**? 🚀
 
 
