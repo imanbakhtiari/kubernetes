@@ -1,0 +1,63 @@
+global:
+  # -- Image pull secrets, that can be shared across multiple helm charts
+  imagePullSecrets: []
+  image:
+    # -- Image registry, that can be shared across multiple helm charts
+    registry: ""
+  # -- Openshift security context compatibility configuration
+  compatibility:
+    openshift:
+      adaptSecurityContext: "auto"
+  # -- k8s cluster domain suffix, uses for building storage pods' FQDN. Details are [here](https://kubernetes.io/docs/tasks/administer-cluster/dns-custom-nameservers/)
+  cluster:
+    dnsDomain: company.local.
+
+vmselect:
+  fullnameOverride: "vmselect"
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8481"
+  suppressStorageFQDNsRender: true
+  extraArgs:
+    dedup.minScrapeInterval: 10ms
+    replicationFactor: 3
+    envflag.enable: "true"
+    storageNode: |
+      vmstorage-live.monitoring.svc.company.local:8401,vmstorage-longterm.monitoring.svc.company.local:8401
+  replicaCount: 3  # Number of vmselect pods
+  service:
+    annotations:
+      metallb.universe.tf/address-pool: internal-pool
+      metallb.universe.tf/loadBalancerIPs: 172.30.55.11
+    type: LoadBalancer
+    labels:
+      net: internal
+
+  #resources:
+  #  requests:
+  #    memory: 1Gi
+  #    cpu: 500m
+  #  limits:
+  #    memory: 2Gi
+  #    cpu: 1
+  #hpa:
+  #  enabled: true
+  #  minReplicas: 1
+  #  maxReplicas: 10
+  #  targetCPUUtilizationPercentage: 70
+  #  targetMemoryUtilizationPercentage: 70
+  #vpa:
+  #  enabled: true
+  #  updatePolicy: "Auto"
+  #  resourcePolicy:
+  #    memory:
+  #      min: 500Mi
+  #      max: 2Gi
+  #    cpu:
+  #      min: 250m
+  #      max: 2
+vminsert:
+  enabled: false
+
+vmstorage:
+  enabled: false

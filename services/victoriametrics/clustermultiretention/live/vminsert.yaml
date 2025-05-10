@@ -1,0 +1,88 @@
+global:
+  # -- Image pull secrets, that can be shared across multiple helm charts
+  imagePullSecrets: []
+  image:
+    # -- Image registry, that can be shared across multiple helm charts
+    registry: ""
+  # -- Openshift security context compatibility configuration
+  compatibility:
+    openshift:
+      adaptSecurityContext: "auto"
+  # -- k8s cluster domain suffix, uses for building storage pods' FQDN. Details are [here](https://kubernetes.io/docs/tasks/administer-cluster/dns-custom-nameservers/)
+  cluster:
+    dnsDomain: cluster.local.
+
+vminsert:
+  fullnameOverride: "vminsert-live"
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8480"
+  supressStorageFQDNsRender: true
+    #remoteWrite:
+    #- url: http://vmstorage-live.monitoring.svc.company.local:8482/api/v1/write
+  extraArgs:
+    replicationFactor: 3
+#    storageNode:
+#      - "vmstorage-live-0.monitoring.svc.company.local:8401"
+#      - "vmstorage-live-1.monitoring.svc.company.local:8401"
+#      - "vmstorage-live-2.monitoring.svc.company.local:8401"
+      #remoteWrite:.url: "http://vmstorage-live.monitoring.svc.company.local:8482/api/v1/write"
+  retentionPeriod: "24h"
+  replicaCount: 3
+  #replicationFactor: 5
+  #resources:
+  #  requests:
+  #    memory: 1Gi
+  #    cpu: 250m
+  #  limits:
+  #    memory: 2Gi
+  #    cpu: 1
+  #hpa:
+  #  enabled: true
+  #  minReplicas: 1
+  #  maxReplicas: 10
+  #  targetCPUUtilizationPercentage: 70
+  #  targetMemoryUtilizationPercentage: 70
+  #vpa:
+  #  enabled: true
+  #  updatePolicy: "Auto"  # Auto will allow VPA to adjust resources automatically
+  #  resourcePolicy:
+  #    memory:
+  #      min: 500Mi   # Minimum memory request
+  #      max: 2Gi     # Maximum memory request
+  #    cpu:
+  #      min: 500m    # Minimum CPU request
+  #      max: 2       # Maximum CPU request
+vmstorage:
+  persistentVolume:
+    enabled: true
+    size: 100Gi
+    #srorageClassName:
+  fullnameOverride: "vmstorage-live"
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8482"
+  persistence:
+    enabled: true
+    size: 100Gi  # Adjust size as needed
+    storageClass: "ceph-rbd-sc"
+    #accessModes:
+    #  - ReadWriteMany
+  command:
+    - "-envflag.enable=true"
+    - "-retentionPeriod=1d"
+  retentionPeriod: 1d
+  retention:
+    duration: "1d"
+  replicaCount: 3
+  exterAargs:
+    dedup.minScrapeInterval: 1s
+  #resources:
+  #  requests:
+  #    memory: 1Gi
+  #    cpu: 250m
+  #  limits:
+  #    memory: 2Gi
+  #    cpu: 1
+vmselect:
+  enabled: false

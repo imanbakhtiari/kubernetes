@@ -1,0 +1,28 @@
+vmstorage:
+  fullnameOverride: "vmstorage-longterm"
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8482"
+  persistence:
+    enabled: true
+    size: 100Gi  # Adjust size as needed
+    storageClass: "ceph-rbd-sc"
+    #accessModes:
+    #  - ReadWriteMany
+  retentionPeriod: 12
+  retention:
+    duration: "12m"
+  replicaCount: 3  # Ensures only one pod of vmstorage
+  exterAargs:
+    dedup.minScrapeInterval: 1s  #resources:
+  #  requests:
+  #    memory: 1Gi
+  #    cpu: 250m
+  #  limits:
+  #    memory: 2Gi
+  #    cpu: 1
+vmselect:
+  enabled: false
+
+vminsert:
+  enabled: false

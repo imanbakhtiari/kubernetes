@@ -1,0 +1,36 @@
+vmstorage:
+  persistentVolume:
+    enabled: true 
+    size: 100Gi
+    #srorageClassName:
+  fullnameOverride: "vmstorage-live"
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8482"
+  persistence:
+    enabled: true
+    size: 100Gi  # Adjust size as needed
+    storageClass: "ceph-rbd-sc"
+    #accessModes:
+    #  - ReadWriteMany
+  command:
+    - "-envflag.enable=true"
+    - "-retentionPeriod=1d"
+  retentionPeriod: 1d
+  retention:
+    duration: "1d"
+  replicaCount: 3
+  exterAargs:
+    dedup.minScrapeInterval: 1s
+  #resources:
+  #  requests:
+  #    memory: 1Gi
+  #    cpu: 250m
+  #  limits:
+  #    memory: 2Gi
+  #    cpu: 1
+vmselect:
+  enabled: false
+
+vminsert:
+  enabled: false

@@ -1,0 +1,195 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lb-mediasrv-netdata
+  namespace: lb-mediasrv
+spec:
+  selector:
+    matchLabels:
+      #app: lb-mediasrv
+      app2: lb-mediasrv-netdata
+  replicas: 3
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  minReadySeconds: 20
+  template:
+    metadata:
+      labels:
+        #app: lb-mediasrv
+        app2: lb-mediasrv-netdata
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: lb-mediasrv
+          image: registryamin.company.com/lb-prod:debian-1.29.11
+          ports:
+            - containerPort: 443
+              protocol: TCP
+          volumeMounts:
+            - name: cert-dir
+              mountPath: /etc/nginx/ssl
+              readOnly: true
+            - mountPath: /var/log/nginx
+              name: logs
+            - name: nginx-config2-test 
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+
+        - name: netdata
+          image: netdata/netdata:v1.29.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 19999
+          volumeMounts:
+            - name: netdata-nginx-config
+              mountPath: /etc/netdata/python.d/nginx.conf
+              subPath: nginx.conf
+            - mountPath: /var/log/nginx
+              name: logs
+            - mountPath: /etc/netdata/netdata.conf
+              name: netdata-config
+              subPath: netdata.conf
+            - mountPath: /var/lib/netdata
+              name: netdata-writable
+            - name: netdata-config-volume
+              mountPath: /etc/netdata/python.d/web_log.conf  # Mount the web_log.conf file at the correct path
+              subPath: web_log.conf  # Mount only the config file from the ConfigMap
+
+        - name: nginx-prometheus-exporter
+          image: nginx/nginx-prometheus-exporter:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9113
+          env:
+            - name: NGINX_SERVER
+              value: "http://127.0.0.1:80/stub_status"
+          volumeMounts:
+            - mountPath: /etc/nginx/nginx.conf
+              name: nginx-config2-test
+              subPath: nginx.conf
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 9113
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+
+      volumes:
+        - name: cert-dir
+          secret:
+            secretName: starcompanydotcom
+        - name: logs
+          emptyDir: {}
+        - name: nginx-config2-test
+          configMap:
+            defaultMode: 420
+            name: nginx-config2-test
+        - name: netdata-config
+          configMap:
+            name: netdata-config
+        - name: netdata-writable
+          emptyDir: {}
+        - name: netdata-config-volume
+          configMap:
+            name: netdata-web-log-config
+        - name: netdata-nginx-config
+          configMap:
+            name: netdata-nginx-config
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netdata-config
+  namespace: lb-mediasrv
+data:
+  netdata.conf: |
+    [api]
+        enabled = yes
+        bind to = 0.0.0.0:19999
+    [web]
+        mode = static-threaded
+    [plugins]
+        web_log = yes
+        disk = no
+        memory = no
+        cpu = no
+        netdata = no
+        apps = no
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config2-test
+  namespace: lb-mediasrv 
+data:
+  nginx.conf: |
+    worker_processes 1;
+    events { worker_connections 1024; }
+    http {
+        access_log /var/log/nginx/access.log;
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        types_hash_max_size 2048;
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        server {
+          listen 443;
+          server_name localhost;
+          location /stub_status {
+            stub_status on;
+            access_log off;
+          }
+          location / {
+            root /usr/share/nginx/html;
+            index index.html index.htm;
+          }
+        }
+    }
+
+---
+
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netdata-web-log-config
+  namespace: lb-mediasrv 
+data:
+  web_log.conf: |
+    nginx_https_log:
+      name: 'nginx_https'
+      path: '/var/log/nginx/access.log'
+      method: 'https'  # Use HTTPS for requests
+      url: 'http://127.0.0.1:443/stub_status'  # NGINX status endpoint
+      url_patterns:
+        - name: 'all_https_requests'
+          pattern: '~^https://.*'  # Matches all HTTPS requests using RegExp
+      #format: '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent"'
+      verify_ssl: no  # Optional: Disable SSL certificate verification if using self-signed certs
+      timeout: 1000  # Optional: Set request timeout
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netdata-nginx-config
+  namespace: lb-mediasrv 
+data:
+  nginx.conf: |
+    localhost:
+      name: 'local'
+      url: 'https://127.0.0.1/stub_status/'
+      tls_skip_verify: yes
+    localipv4:
+      name: 'local'
+      url: 'https://127.0.0.1/stub_status/'
+      tls_skip_verify: yes
+---
