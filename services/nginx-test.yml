@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-html
+  namespace: test
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Backend Service</title>
+    </head>
+    <body>
+        <h1>Hello from backend-service!</h1>
+        <p>This is served from NGINX on port 8080 inside Kubernetes.</p>
+    </body>
+    </html>
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-nginx-conf
+  namespace: test
+data:
+  nginx.conf: |
+    worker_processes 1;
+    events { worker_connections 1024; }
+
+    http {
+        include       mime.types;
+        default_type  application/octet-stream;
+        sendfile        on;
+        keepalive_timeout  65;
+
+        server {
+            listen 8080;
+            server_name localhost;
+
+            location / {
+                root   /usr/share/nginx/html;
+                index  index.html index.htm;
+            }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-service
+  namespace: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      initContainers:
+        - name: generate-large-html
+          image: busybox
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "<html><body><h1>Hello</h1><pre>" > /usr/share/nginx/html/index.html
+              head -c $((30 * 1024 * 1024)) /dev/urandom | base64 >> /usr/share/nginx/html/index.html
+              echo "</pre></body></html>" >> /usr/share/nginx/html/index.html
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+      containers:
+        - name: backend
+          image: nginx:alpine
+          command: ["nginx"]
+          args: ["-g", "daemon off;", "-c", "/etc/nginx/nginx.conf"]
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
+        - name: html
+          emptyDir: {}
+        - name: nginx-conf
+          configMap:
+            name: backend-nginx-conf
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: test
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+
