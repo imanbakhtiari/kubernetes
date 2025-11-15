@@ -111,3 +111,64 @@ cilium install \
 cilium status
 ```
 
+
+- rke2-agent 
+```
+mkdir /etc/rancher/
+mkdir /etc/rancher/rke2/
+```
+
+```
+sudo vi /etc/rancher/rke2/config.yaml
+```
+
+```
+token:  DSes9N4UAYUlHRsQ92HnFf1DUA1jRDYWIi3mEfDNto14GIvtJP1
+server: https://rke2-1:9345
+tls-san:
+  - 172.26.2.161
+  - 172.26.2.162
+  - 172.26.2.163
+  - rke2-1
+  - rke2-2
+  - rke2-3
+disable:
+  - rke2-ingress-nginx
+  - rke2-metrics-server
+  - rke2-snapshot-controller
+  - rke2-snapshot-controller-crd
+  - rke2-snapshot-validation-webhook
+cni: none
+disable-kube-proxy: "true"
+disable-cloud-controller: "true"
+enable-servicelb: "false"
+```
+
+```
+curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" sh -
+```
+
+```
+systemctl enable rke2-agent.service
+```
+
+```
+systemctl start rke2-agent.service
+```
+
+- bash completion and kubectl
+
+```
+mkdir ~/.kube && cp /etc/rancher/rke2/rke2.yaml ~/.kube/config
+```
+
+```
+alias kubectl="/var/lib/rancher/rke2/bin/kubectl"
+alias crictl="/var/lib/rancher/rke2/bin/crictl"
+alias ctr="/var/lib/rancher/rke2/bin/ctr"
+export PATH=$PATH:/var/lib/rancher/rke2/bin
+source <(kubectl completion bash)
+source /etc/bash_completion
+source <(/var/lib/rancher/rke2/bin/kubectl completion bash)
+```
+
